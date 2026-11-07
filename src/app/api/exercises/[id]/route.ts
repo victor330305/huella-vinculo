@@ -1,0 +1,79 @@
+import { NextRequest, NextResponse } from 'next/server';
+import { z } from 'zod';
+import { prisma } from '@/lib/prisma';
+import { auth } from '@/lib/auth';
+
+const updateExerciseSchema = z.object({
+  status: z.enum(['ASSIGNED', 'IN_PROGRESS', 'COMPLETED', 'PAUSED']).optional(),
+  instructions: z.string().optional(),
+  observations: z.string().optional(),
+  professionalNotes: z.string().optional(),
+  reviewDate: z.string().datetime().optional().nullable(),
+});
+
+export async function GET(
+  request: NextRequest,
+  { params }: { params: { id: string } }
+) {
+  const session = await auth();
+  if (!session) {
+    return NextResponse.json({ error: 'No autorizado' }, { status: 401 });
+  }
+
+  const exercise = await prisma.exercise.findUnique({
+    where: { id: params.id },
+    include: {
+      dog: true,
+    },
+  });
+
+  if (!exercise) {
+    return NextResponse.json({ error: 'Ejercicio no encontrado' }, { status: 404 });
+  }
+
+  return NextResponse.json(exercise);
+}
+
+export async function PUT(
+  request: NextRequest,
+  { params }: { params: { id: string } }
+) {
+  const session = await auth();
+  if (!session) {
+    return NextResponse.json({ error: 'No autorizado' }, { status: 401 });
+  }
+
+  try {
+    const body = await request.json();
+    const parsed = updateExerciseSchema.safeParse(body);
+
+    if (!parsed.success) {
+      return NextResponse.json(
+        { error: 'Datos inválidos', details: parsed.error.flatten() },
+        { status: 400 }
+      );
+    }
+
+    const existing = await prisma.exercise.findUnique({ where: { id: params.id } });
+    if (!existing) {
+      return NextResponse.json({ error: 'Ejercicio no encontrado' }, { status: 404 });
+    }
+
+    const { reviewDate, ...rest } = parsed.data;
+
+    const updated = await prisma.exercise.update({
+      where: { id: params.id },
+      data: {
+        ...rest,
+        ...(reviewDate !== undefined
+          ? { reviewDate: reviewDate ? new Date(reviewDate) : null }
+          : {}),
+      },
+    });
+
+    return NextResponse.json(updated);
+  } catch (error) {
+    console.error('PUT /api/exercises/[id] error:', error);
+    return NextResponse.json({ error: 'Error interno' }, { status: 500 });
+  }
+}
