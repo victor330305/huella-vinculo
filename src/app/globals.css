@@ -1,26 +1,63 @@
 @import "tailwindcss";
 
+@theme {
+  /* Paleta Huella & Vínculo */
+  --color-primary-50: #f0f7f1;
+  --color-primary-100: #dceee0;
+  --color-primary-200: #b9ddc1;
+  --color-primary-300: #8fc59e;
+  --color-primary-400: #64a87b;
+  --color-primary-500: #4a7c59;
+  --color-primary-600: #3a6347;
+  --color-primary-700: #2c4a35;
+  --color-primary-800: #1e3224;
+  --color-primary-900: #111c14;
+
+  --color-accent-50: #fdf8e8;
+  --color-accent-100: #faefc4;
+  --color-accent-200: #f5de89;
+  --color-accent-300: #efc84e;
+  --color-accent-400: #d4a017;
+  --color-accent-500: #b88012;
+  --color-accent-600: #9a6a0e;
+  --color-accent-700: #7c540b;
+  --color-accent-800: #5e3f08;
+  --color-accent-900: #402b05;
+
+  --color-cream: #f5f0e8;
+  --color-cream-dark: #ede8df;
+
+  /* Tipografía */
+  --font-sans: "Inter", system-ui, sans-serif;
+}
+
 :root {
   --background: #ffffff;
-  --foreground: #171717;
-}
-
-@theme inline {
-  --color-background: var(--background);
-  --color-foreground: var(--foreground);
-  --font-sans: var(--font-geist-sans);
-  --font-mono: var(--font-geist-mono);
-}
-
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
-  }
+  --foreground: #1a1a1a;
 }
 
 body {
   background: var(--background);
   color: var(--foreground);
-  font-family: Arial, Helvetica, sans-serif;
+  font-family: var(--font-sans);
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+/* Scrollbar personalizado */
+::-webkit-scrollbar {
+  width: 6px;
+}
+::-webkit-scrollbar-track {
+  background: #f0f7f1;
+}
+::-webkit-scrollbar-thumb {
+  background: #4a7c59;
+  border-radius: 3px;
+}
+
+/* Focus visible accesible */
+:focus-visible {
+  outline: 2px solid #4a7c59;
+  outline-offset: 2px;
 }

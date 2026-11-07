@@ -1,4 +1,5 @@
 import { prisma } from '@/lib/prisma'
+import { Prisma } from '@prisma/client'
 import { auth } from '@/lib/auth'
 import { redirect } from 'next/navigation'
 import Link from 'next/link'
@@ -38,7 +39,7 @@ export default async function ClientesPage({
   const page = Math.max(1, parseInt(searchParams.page ?? '1', 10))
   const activeParam = searchParams.active
 
-  const where: Parameters<typeof prisma.owner.findMany>[0]['where'] = {}
+  const where: Prisma.OwnerWhereInput = {}
 
   if (search) {
     where.OR = [

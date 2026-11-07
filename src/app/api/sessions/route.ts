@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { z } from 'zod';
+import { Prisma, SessionStatus } from '@prisma/client';
 import { prisma } from '@/lib/prisma';
 import { auth } from '@/lib/auth';
 
@@ -25,11 +26,11 @@ export async function GET(request: NextRequest) {
   const from = searchParams.get('from');
   const to = searchParams.get('to');
 
-  const where: Parameters<typeof prisma.session.findMany>[0]['where'] = {};
+  const where: Prisma.SessionWhereInput = {};
 
   if (dogId) where.dogId = dogId;
   if (professionalId) where.professionalId = professionalId;
-  if (status) where.status = status as Parameters<typeof where.status>;
+  if (status) where.status = status as SessionStatus;
   if (from || to) {
     where.date = {};
     if (from) where.date.gte = new Date(from);

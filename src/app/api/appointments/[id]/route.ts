@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { z } from 'zod';
+import { AppointmentStatus } from '@prisma/client';
 import { prisma } from '@/lib/prisma';
 import { auth } from '@/lib/auth';
 
@@ -13,15 +14,17 @@ const updateAppointmentSchema = z.object({
 
 export async function GET(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   const session = await auth();
   if (!session) {
     return NextResponse.json({ error: 'No autorizado' }, { status: 401 });
   }
 
+  const { id } = await params;
+
   const appointment = await prisma.appointment.findUnique({
-    where: { id: params.id },
+    where: { id },
     include: {
       owner: true,
       dog: { include: { owner: true } },
@@ -38,7 +41,7 @@ export async function GET(
 
 export async function PUT(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   const session = await auth();
   if (!session) {
@@ -46,6 +49,7 @@ export async function PUT(
   }
 
   try {
+    const { id } = await params;
     const body = await request.json();
     const parsed = updateAppointmentSchema.safeParse(body);
 
@@ -56,17 +60,18 @@ export async function PUT(
       );
     }
 
-    const existing = await prisma.appointment.findUnique({ where: { id: params.id } });
+    const existing = await prisma.appointment.findUnique({ where: { id } });
     if (!existing) {
       return NextResponse.json({ error: 'Turno no encontrado' }, { status: 404 });
     }
 
-    const { date, ...rest } = parsed.data;
+    const { date, status: statusValue, ...rest } = parsed.data;
 
     const updated = await prisma.appointment.update({
-      where: { id: params.id },
+      where: { id },
       data: {
         ...rest,
+        ...(statusValue !== undefined ? { status: statusValue as AppointmentStatus } : {}),
         ...(date !== undefined ? { date: new Date(date) } : {}),
       },
     });

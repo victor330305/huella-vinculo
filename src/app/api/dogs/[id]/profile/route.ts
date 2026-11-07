@@ -14,7 +14,7 @@ const updateProfileSchema = z.object({
 
 export async function PUT(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   const session = await auth();
   if (!session) {
@@ -22,6 +22,7 @@ export async function PUT(
   }
 
   try {
+    const { id } = await params;
     const body = await request.json();
     const parsed = updateProfileSchema.safeParse(body);
 
@@ -32,15 +33,15 @@ export async function PUT(
       );
     }
 
-    const dog = await prisma.dog.findUnique({ where: { id: params.id } });
+    const dog = await prisma.dog.findUnique({ where: { id } });
     if (!dog) {
       return NextResponse.json({ error: 'Perro no encontrado' }, { status: 404 });
     }
 
     const profile = await prisma.dogProfile.upsert({
-      where: { dogId: params.id },
+      where: { dogId: id },
       update: parsed.data,
-      create: { dogId: params.id, ...parsed.data },
+      create: { dogId: id, ...parsed.data },
     });
 
     return NextResponse.json(profile);

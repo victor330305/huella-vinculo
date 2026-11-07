@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { z } from 'zod';
+import { ExerciseStatus } from '@prisma/client';
 import { prisma } from '@/lib/prisma';
 import { auth } from '@/lib/auth';
 
@@ -13,18 +14,18 @@ const updateExerciseSchema = z.object({
 
 export async function GET(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   const session = await auth();
   if (!session) {
     return NextResponse.json({ error: 'No autorizado' }, { status: 401 });
   }
 
+  const { id } = await params;
+
   const exercise = await prisma.exercise.findUnique({
-    where: { id: params.id },
-    include: {
-      dog: true,
-    },
+    where: { id },
+    include: { dog: true },
   });
 
   if (!exercise) {
@@ -36,7 +37,7 @@ export async function GET(
 
 export async function PUT(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   const session = await auth();
   if (!session) {
@@ -44,6 +45,7 @@ export async function PUT(
   }
 
   try {
+    const { id } = await params;
     const body = await request.json();
     const parsed = updateExerciseSchema.safeParse(body);
 
@@ -54,17 +56,18 @@ export async function PUT(
       );
     }
 
-    const existing = await prisma.exercise.findUnique({ where: { id: params.id } });
+    const existing = await prisma.exercise.findUnique({ where: { id } });
     if (!existing) {
       return NextResponse.json({ error: 'Ejercicio no encontrado' }, { status: 404 });
     }
 
-    const { reviewDate, ...rest } = parsed.data;
+    const { reviewDate, status: statusValue, ...rest } = parsed.data;
 
     const updated = await prisma.exercise.update({
-      where: { id: params.id },
+      where: { id },
       data: {
         ...rest,
+        ...(statusValue !== undefined ? { status: statusValue as ExerciseStatus } : {}),
         ...(reviewDate !== undefined
           ? { reviewDate: reviewDate ? new Date(reviewDate) : null }
           : {}),

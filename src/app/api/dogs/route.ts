@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { z } from 'zod';
+import { Prisma } from '@prisma/client';
 import { prisma } from '@/lib/prisma';
 import { auth } from '@/lib/auth';
 
@@ -28,7 +29,7 @@ export async function GET(request: NextRequest) {
   const ownerId = searchParams.get('ownerId');
   const activeParam = searchParams.get('active');
 
-  const where: Parameters<typeof prisma.dog.findMany>[0]['where'] = {};
+  const where: Prisma.DogWhereInput = {};
 
   if (search) {
     where.OR = [

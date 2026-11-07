@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { z } from 'zod';
+import { SessionStatus } from '@prisma/client';
 import { prisma } from '@/lib/prisma';
 import { auth } from '@/lib/auth';
 
@@ -12,15 +13,17 @@ const updateSessionSchema = z.object({
 
 export async function GET(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   const session = await auth();
   if (!session) {
     return NextResponse.json({ error: 'No autorizado' }, { status: 401 });
   }
 
+  const { id } = await params;
+
   const found = await prisma.session.findUnique({
-    where: { id: params.id },
+    where: { id },
     include: {
       dog: { include: { owner: true } },
       professional: { select: { name: true } },
@@ -36,7 +39,7 @@ export async function GET(
 
 export async function PUT(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   const session = await auth();
   if (!session) {
@@ -44,6 +47,7 @@ export async function PUT(
   }
 
   try {
+    const { id } = await params;
     const body = await request.json();
     const parsed = updateSessionSchema.safeParse(body);
 
@@ -54,14 +58,19 @@ export async function PUT(
       );
     }
 
-    const existing = await prisma.session.findUnique({ where: { id: params.id } });
+    const existing = await prisma.session.findUnique({ where: { id } });
     if (!existing) {
       return NextResponse.json({ error: 'Sesión no encontrada' }, { status: 404 });
     }
 
+    const { status: statusValue, ...rest } = parsed.data;
+
     const updated = await prisma.session.update({
-      where: { id: params.id },
-      data: parsed.data,
+      where: { id },
+      data: {
+        ...rest,
+        ...(statusValue !== undefined ? { status: statusValue as SessionStatus } : {}),
+      },
     });
 
     return NextResponse.json(updated);

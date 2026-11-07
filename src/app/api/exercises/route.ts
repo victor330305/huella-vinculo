@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { z } from 'zod';
+import { Prisma, ExerciseStatus } from '@prisma/client';
 import { prisma } from '@/lib/prisma';
 import { auth } from '@/lib/auth';
 
@@ -24,10 +25,10 @@ export async function GET(request: NextRequest) {
   const dogId = searchParams.get('dogId');
   const status = searchParams.get('status');
 
-  const where: Parameters<typeof prisma.exercise.findMany>[0]['where'] = {};
+  const where: Prisma.ExerciseWhereInput = {};
 
   if (dogId) where.dogId = dogId;
-  if (status) where.status = status as Parameters<typeof where.status>;
+  if (status) where.status = status as ExerciseStatus;
 
   const exercises = await prisma.exercise.findMany({
     where,

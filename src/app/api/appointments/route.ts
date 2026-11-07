@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { z } from 'zod';
+import { Prisma, AppointmentStatus } from '@prisma/client';
 import { prisma } from '@/lib/prisma';
 import { auth } from '@/lib/auth';
 
@@ -26,11 +27,11 @@ export async function GET(request: NextRequest) {
   const from = searchParams.get('from');
   const to = searchParams.get('to');
 
-  const where: Parameters<typeof prisma.appointment.findMany>[0]['where'] = {};
+  const where: Prisma.AppointmentWhereInput = {};
 
   if (ownerId) where.ownerId = ownerId;
   if (dogId) where.dogId = dogId;
-  if (status) where.status = status as Parameters<typeof where.status>;
+  if (status) where.status = status as AppointmentStatus;
   if (from || to) {
     where.date = {};
     if (from) where.date.gte = new Date(from);

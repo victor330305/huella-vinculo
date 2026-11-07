@@ -16,19 +16,19 @@ const updateOwnerSchema = z.object({
 
 export async function GET(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   const session = await auth();
   if (!session) {
     return NextResponse.json({ error: 'No autorizado' }, { status: 401 });
   }
 
+  const { id } = await params;
+
   const owner = await prisma.owner.findUnique({
-    where: { id: params.id },
+    where: { id },
     include: {
-      dogs: {
-        where: { isActive: true },
-      },
+      dogs: { where: { isActive: true } },
       appointments: {
         orderBy: { date: 'desc' },
         take: 10,
@@ -45,7 +45,7 @@ export async function GET(
 
 export async function PUT(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   const session = await auth();
   if (!session) {
@@ -53,6 +53,7 @@ export async function PUT(
   }
 
   try {
+    const { id } = await params;
     const body = await request.json();
     const parsed = updateOwnerSchema.safeParse(body);
 
@@ -63,13 +64,13 @@ export async function PUT(
       );
     }
 
-    const existing = await prisma.owner.findUnique({ where: { id: params.id } });
+    const existing = await prisma.owner.findUnique({ where: { id } });
     if (!existing) {
       return NextResponse.json({ error: 'Propietario no encontrado' }, { status: 404 });
     }
 
     const owner = await prisma.owner.update({
-      where: { id: params.id },
+      where: { id },
       data: parsed.data,
     });
 

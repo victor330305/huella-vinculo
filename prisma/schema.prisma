@@ -1,0 +1,236 @@
+generator client {
+  provider = "prisma-client-js"
+  previewFeatures = ["driverAdapters"]
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+// ─── AUTENTICACIÓN ──────────────────────────────────────────────────────────
+
+enum UserRole {
+  ADMIN
+  OWNER
+}
+
+model User {
+  id             String    @id @default(cuid())
+  email          String    @unique
+  hashedPassword String
+  name           String
+  role           UserRole  @default(ADMIN)
+  isActive       Boolean   @default(true)
+  createdAt      DateTime  @default(now())
+  updatedAt      DateTime  @updatedAt
+
+  owner    Owner?
+  sessions Session[]
+
+  @@map("users")
+}
+
+// ─── PROPIETARIOS ────────────────────────────────────────────────────────────
+
+model Owner {
+  id        String   @id @default(cuid())
+  userId    String?  @unique
+  user      User?    @relation(fields: [userId], references: [id])
+
+  firstName String
+  lastName  String
+  email     String   @unique
+  phone     String
+  address   String?
+  notes     String?
+  isActive  Boolean  @default(true)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  dogs         Dog[]
+  appointments Appointment[]
+
+  @@map("owners")
+}
+
+// ─── PERROS ──────────────────────────────────────────────────────────────────
+
+enum DogSex {
+  MALE
+  FEMALE
+}
+
+model Dog {
+  id              String    @id @default(cuid())
+  ownerId         String
+  owner           Owner     @relation(fields: [ownerId], references: [id])
+
+  name            String
+  breed           String
+  birthDate       DateTime?
+  approximateAge  String?
+  sex             DogSex
+  color           String?
+  weight          Float?
+  microchip       String?
+  profilePhotoUrl String?
+  notes           String?
+  isActive        Boolean   @default(true)
+  createdAt       DateTime  @default(now())
+  updatedAt       DateTime  @updatedAt
+
+  profile      DogProfile?
+  sessions     Session[]
+  exercises    Exercise[]
+  appointments Appointment[]
+  photos       DogPhoto[]
+
+  @@map("dogs")
+}
+
+// ─── EXPEDIENTE EVOLUTIVO ────────────────────────────────────────────────────
+
+model DogProfile {
+  id                  String   @id @default(cuid())
+  dogId               String   @unique
+  dog                 Dog      @relation(fields: [dogId], references: [id])
+
+  initialEvaluation   String?
+  background          String?
+  identifiedNeeds     String?
+  agreedObjectives    String?
+  workPlan            String?
+  homeRecommendations String?
+  createdAt           DateTime @default(now())
+  updatedAt           DateTime @updatedAt
+
+  @@map("dog_profiles")
+}
+
+// ─── FOTOS DEL PERRO ─────────────────────────────────────────────────────────
+
+model DogPhoto {
+  id        String   @id @default(cuid())
+  dogId     String
+  dog       Dog      @relation(fields: [dogId], references: [id])
+
+  url       String
+  caption   String?
+  isCover   Boolean  @default(false)
+  createdAt DateTime @default(now())
+
+  @@map("dog_photos")
+}
+
+// ─── SESIONES ────────────────────────────────────────────────────────────────
+
+enum SessionType {
+  EVALUATION
+  TRAINING
+  FOLLOW_UP
+}
+
+enum SessionStatus {
+  SCHEDULED
+  COMPLETED
+  CANCELLED
+}
+
+model Session {
+  id              String        @id @default(cuid())
+  dogId           String
+  dog             Dog           @relation(fields: [dogId], references: [id])
+  professionalId  String
+  professional    User          @relation(fields: [professionalId], references: [id])
+
+  date            DateTime
+  durationMinutes Int           @default(60)
+  type            SessionType   @default(TRAINING)
+  status          SessionStatus @default(SCHEDULED)
+  observations    String?
+  notes           String?
+  createdAt       DateTime      @default(now())
+  updatedAt       DateTime      @updatedAt
+
+  appointment Appointment?
+
+  @@map("sessions")
+}
+
+// ─── EJERCICIOS ──────────────────────────────────────────────────────────────
+
+enum ExerciseStatus {
+  ASSIGNED
+  IN_PROGRESS
+  COMPLETED
+  PAUSED
+}
+
+model Exercise {
+  id                String         @id @default(cuid())
+  dogId             String
+  dog               Dog            @relation(fields: [dogId], references: [id])
+
+  name              String
+  objective         String
+  instructions      String
+  videoUrl          String?
+  frequency         String?
+  observations      String?
+  status            ExerciseStatus @default(ASSIGNED)
+  assignedAt        DateTime       @default(now())
+  reviewDate        DateTime?
+  professionalNotes String?
+  updatedAt         DateTime       @updatedAt
+
+  @@map("exercises")
+}
+
+// ─── AGENDA / TURNOS ─────────────────────────────────────────────────────────
+
+enum AppointmentStatus {
+  SCHEDULED
+  CONFIRMED
+  COMPLETED
+  CANCELLED
+  NO_SHOW
+}
+
+model Appointment {
+  id              String            @id @default(cuid())
+  ownerId         String
+  owner           Owner             @relation(fields: [ownerId], references: [id])
+  dogId           String
+  dog             Dog               @relation(fields: [dogId], references: [id])
+
+  date            DateTime
+  durationMinutes Int               @default(60)
+  serviceType     String
+  location        String?
+  status          AppointmentStatus @default(SCHEDULED)
+  notes           String?
+  sessionId       String?           @unique
+  session         Session?          @relation(fields: [sessionId], references: [id])
+  createdAt       DateTime          @default(now())
+  updatedAt       DateTime          @updatedAt
+
+  @@map("appointments")
+}
+
+// ─── FORMULARIO DE CONTACTO ──────────────────────────────────────────────────
+
+model ContactRequest {
+  id              String   @id @default(cuid())
+  ownerName       String
+  email           String
+  phone           String
+  dogName         String
+  breed           String?
+  approximateAge  String?
+  specialty       String
+  message         String?
+  isRead          Boolean  @default(false)
+  createdAt       DateTime @default(now())
+
+  @@map("contact_requests")
+}

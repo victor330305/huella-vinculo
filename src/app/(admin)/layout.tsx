@@ -3,6 +3,9 @@ import { redirect } from 'next/navigation'
 import { AdminSidebar } from '@/components/admin/AdminSidebar'
 import { AdminTopbar } from '@/components/admin/AdminTopbar'
 
+// Todas las páginas del panel son dinámicas (requieren auth + DB)
+export const dynamic = 'force-dynamic'
+
 export default async function AdminLayout({
   children,
 }: {

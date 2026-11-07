@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { z } from 'zod';
+import { Prisma } from '@prisma/client';
 import { prisma } from '@/lib/prisma';
 import { auth } from '@/lib/auth';
 
@@ -24,7 +25,7 @@ export async function GET(request: NextRequest) {
   const pageSize = Math.max(1, parseInt(searchParams.get('pageSize') ?? '20', 10));
   const activeParam = searchParams.get('active');
 
-  const where: Parameters<typeof prisma.owner.findMany>[0]['where'] = {};
+  const where: Prisma.OwnerWhereInput = {};
 
   if (search) {
     where.OR = [

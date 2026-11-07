@@ -1,4 +1,5 @@
 import { prisma } from '@/lib/prisma'
+import { Prisma } from '@prisma/client'
 import { auth } from '@/lib/auth'
 import { redirect } from 'next/navigation'
 import Link from 'next/link'
@@ -22,7 +23,7 @@ export default async function PerrosPage({
 
   const search = searchParams.search ?? ''
 
-  const where: Parameters<typeof prisma.dog.findMany>[0]['where'] = {
+  const where: Prisma.DogWhereInput = {
     isActive: true,
   }
 

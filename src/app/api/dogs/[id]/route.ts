@@ -19,15 +19,17 @@ const updateDogSchema = z.object({
 
 export async function GET(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   const session = await auth();
   if (!session) {
     return NextResponse.json({ error: 'No autorizado' }, { status: 401 });
   }
 
+  const { id } = await params;
+
   const dog = await prisma.dog.findUnique({
-    where: { id: params.id },
+    where: { id },
     include: {
       owner: true,
       profile: true,
@@ -54,7 +56,7 @@ export async function GET(
 
 export async function PUT(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   const session = await auth();
   if (!session) {
@@ -62,6 +64,7 @@ export async function PUT(
   }
 
   try {
+    const { id } = await params;
     const body = await request.json();
     const parsed = updateDogSchema.safeParse(body);
 
@@ -72,7 +75,7 @@ export async function PUT(
       );
     }
 
-    const existing = await prisma.dog.findUnique({ where: { id: params.id } });
+    const existing = await prisma.dog.findUnique({ where: { id } });
     if (!existing) {
       return NextResponse.json({ error: 'Perro no encontrado' }, { status: 404 });
     }
@@ -80,7 +83,7 @@ export async function PUT(
     const { birthDate, ...rest } = parsed.data;
 
     const dog = await prisma.dog.update({
-      where: { id: params.id },
+      where: { id },
       data: {
         ...rest,
         ...(birthDate !== undefined
