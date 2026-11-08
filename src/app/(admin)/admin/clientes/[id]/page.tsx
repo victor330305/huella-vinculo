@@ -35,13 +35,15 @@ type AppointmentRow = {
 export default async function ClienteDetailPage({
   params,
 }: {
-  params: { id: string }
+  params: Promise<{ id: string }>
 }) {
   const session = await getSession()
   if (!session) redirect('/login')
 
+  const { id } = await params
+
   const owner = await prisma.owner.findUnique({
-    where: { id: params.id },
+    where: { id },
     include: {
       dogs: { where: { isActive: true } },
       appointments: {

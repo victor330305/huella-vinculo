@@ -11,13 +11,15 @@ import { ChevronLeft, Pencil } from 'lucide-react'
 export default async function PerroDetailPage({
   params,
 }: {
-  params: { id: string }
+  params: Promise<{ id: string }>
 }) {
   const session = await getSession()
   if (!session) redirect('/login')
 
+  const { id } = await params
+
   const dog = await prisma.dog.findUnique({
-    where: { id: params.id },
+    where: { id },
     include: {
       owner: true,
       profile: true,

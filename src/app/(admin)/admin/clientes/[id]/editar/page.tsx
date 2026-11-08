@@ -8,13 +8,15 @@ import { ChevronLeft } from 'lucide-react'
 export default async function EditarClientePage({
   params,
 }: {
-  params: { id: string }
+  params: Promise<{ id: string }>
 }) {
   const session = await getSession()
   if (!session) redirect('/login')
 
+  const { id } = await params
+
   const owner = await prisma.owner.findUnique({
-    where: { id: params.id },
+    where: { id },
   })
 
   if (!owner) notFound()
