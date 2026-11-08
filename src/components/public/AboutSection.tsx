@@ -1,5 +1,5 @@
 import { CheckCircle2, Award, Heart } from "lucide-react";
-import { Avatar, AvatarFallback } from "@/components/ui/avatar";
+import Image from "next/image";
 
 const values = [
   {
@@ -27,12 +27,18 @@ export function AboutSection() {
     <section id="sobre-mi" className="py-20 bg-primary-50">
       <div className="max-w-6xl mx-auto px-4 sm:px-6">
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-12 lg:gap-16 items-center">
-          {/* Columna izquierda — imagen placeholder */}
+          {/* Columna izquierda — foto de Paula */}
           <div className="flex flex-col items-center lg:items-start">
             <div className="relative mb-6">
-              {/* Avatar grande con iniciales */}
-              <div className="w-48 h-48 rounded-full bg-primary-200 flex items-center justify-center ring-4 ring-primary-300 shadow-lg">
-                <span className="text-4xl font-bold text-primary-700">PS</span>
+              <div className="w-56 h-56 rounded-full overflow-hidden ring-4 ring-primary-300 shadow-lg">
+                <Image
+                  src="/paula.jpg"
+                  alt="Paula Soledad — Educadora canina"
+                  width={224}
+                  height={224}
+                  className="w-full h-full object-cover object-top"
+                  priority
+                />
               </div>
               {/* Decoración */}
               <div className="absolute -bottom-3 -right-3 w-16 h-16 rounded-full bg-accent-400 opacity-20" />
@@ -40,20 +46,7 @@ export function AboutSection() {
 
             {/* Nombre y título */}
             <h3 className="text-2xl font-bold text-primary-800 mb-1">Paula Soledad</h3>
-            <p className="text-primary-600 font-medium mb-4">Educadora canina</p>
-
-            {/* Avatar alternativo para pantallas más pequeñas */}
-            <div className="flex items-center gap-3 bg-white rounded-xl px-4 py-3 shadow-sm border border-primary-100">
-              <Avatar className="w-10 h-10">
-                <AvatarFallback className="bg-primary-200 text-primary-700 font-semibold text-sm">
-                  PS
-                </AvatarFallback>
-              </Avatar>
-              <div>
-                <p className="text-sm font-semibold text-primary-800">Paula Soledad</p>
-                <p className="text-xs text-gray-500">Huella & Vínculo</p>
-              </div>
-            </div>
+            <p className="text-primary-600 font-medium">Educadora canina</p>
           </div>
 
           {/* Columna derecha — texto */}

@@ -1,6 +1,6 @@
 import { prisma } from '@/lib/prisma'
 import { Prisma } from '@prisma/client'
-import { auth } from '@/lib/auth'
+import { getSession } from '@/lib/auth'
 import { redirect } from 'next/navigation'
 import Link from 'next/link'
 import { Button } from '@/components/ui/button'
@@ -18,7 +18,7 @@ export default async function PerrosPage({
 }: {
   searchParams: SearchParams
 }) {
-  const session = await auth()
+  const session = await getSession()
   if (!session) redirect('/login')
 
   const search = searchParams.search ?? ''

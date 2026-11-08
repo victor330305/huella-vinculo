@@ -1,69 +1,92 @@
-import NextAuth from "next-auth";
-import Credentials from "next-auth/providers/credentials";
+import { SignJWT, jwtVerify } from "jose";
+import { cookies } from "next/headers";
 import { prisma } from "@/lib/prisma";
 import bcrypt from "bcryptjs";
-import { z } from "zod";
 
-const loginSchema = z.object({
-  email: z.string().email(),
-  password: z.string().min(6),
-});
+const SECRET = new TextEncoder().encode(
+  process.env.NEXTAUTH_SECRET || "fallback-secret-change-in-production"
+);
 
-export const { handlers, auth, signIn, signOut } = NextAuth({
-  providers: [
-    Credentials({
-      name: "credentials",
-      credentials: {
-        email: { label: "Email", type: "email" },
-        password: { label: "Contraseña", type: "password" },
-      },
-      async authorize(credentials) {
-        const parsed = loginSchema.safeParse(credentials);
-        if (!parsed.success) return null;
+const COOKIE_NAME = "hv_session";
+const MAX_AGE = 7 * 24 * 60 * 60; // 7 días en segundos
 
-        const { email, password } = parsed.data;
+export type SessionUser = {
+  id: string;
+  email: string;
+  name: string;
+  role: string;
+};
 
-        const user = await prisma.user.findUnique({
-          where: { email },
-        });
+// Crear token JWT
+export async function createToken(user: SessionUser): Promise<string> {
+  return new SignJWT({ ...user })
+    .setProtectedHeader({ alg: "HS256" })
+    .setIssuedAt()
+    .setExpirationTime(`${MAX_AGE}s`)
+    .sign(SECRET);
+}
 
-        if (!user || !user.isActive) return null;
+// Verificar token JWT
+export async function verifyToken(token: string): Promise<SessionUser | null> {
+  try {
+    const { payload } = await jwtVerify(token, SECRET);
+    return {
+      id: payload.id as string,
+      email: payload.email as string,
+      name: payload.name as string,
+      role: payload.role as string,
+    };
+  } catch {
+    return null;
+  }
+}
 
-        const passwordMatch = await bcrypt.compare(password, user.hashedPassword);
-        if (!passwordMatch) return null;
+// Obtener sesión actual (Server Components)
+export async function getSession(): Promise<SessionUser | null> {
+  const cookieStore = await cookies();
+  const token = cookieStore.get(COOKIE_NAME)?.value;
+  if (!token) return null;
+  return verifyToken(token);
+}
 
-        return {
-          id: user.id,
-          email: user.email,
-          name: user.name,
-          role: user.role,
-        };
-      },
-    }),
-  ],
-  callbacks: {
-    async jwt({ token, user }) {
-      if (user) {
-        token.id = user.id;
-        token.role = (user as { role: string }).role;
-      }
-      return token;
-    },
-    async session({ session, token }) {
-      if (token) {
-        session.user.id = token.id as string;
-        session.user.role = token.role as string;
-      }
-      return session;
-    },
-  },
-  pages: {
-    signIn: "/login",
-    error: "/login",
-  },
-  session: {
-    strategy: "jwt",
-    maxAge: 7 * 24 * 60 * 60, // 7 días
-  },
-  secret: process.env.NEXTAUTH_SECRET,
-});
+// Login: verificar credenciales y crear cookie
+export async function login(email: string, password: string): Promise<SessionUser | null> {
+  const user = await prisma.user.findUnique({ where: { email } });
+  if (!user || !user.isActive) return null;
+
+  const ok = await bcrypt.compare(password, user.hashedPassword);
+  if (!ok) return null;
+
+  const sessionUser: SessionUser = {
+    id: user.id,
+    email: user.email,
+    name: user.name,
+    role: user.role,
+  };
+
+  const token = await createToken(sessionUser);
+  const cookieStore = await cookies();
+  cookieStore.set(COOKIE_NAME, token, {
+    httpOnly: true,
+    secure: process.env.NODE_ENV === "production",
+    sameSite: "lax",
+    maxAge: MAX_AGE,
+    path: "/",
+  });
+
+  return sessionUser;
+}
+
+// Logout: eliminar cookie
+export async function logout() {
+  const cookieStore = await cookies();
+  cookieStore.delete(COOKIE_NAME);
+}
+
+// Para el proxy: verificar token desde request headers
+export async function verifyTokenFromCookie(cookieValue: string | undefined): Promise<SessionUser | null> {
+  if (!cookieValue) return null;
+  return verifyToken(cookieValue);
+}
+
+export { COOKIE_NAME };

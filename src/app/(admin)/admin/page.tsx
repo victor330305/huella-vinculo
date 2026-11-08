@@ -1,5 +1,5 @@
 import { prisma } from '@/lib/prisma'
-import { auth } from '@/lib/auth'
+import { getSession } from '@/lib/auth'
 import { redirect } from 'next/navigation'
 import Link from 'next/link'
 import { formatDate } from '@/lib/utils'
@@ -16,7 +16,7 @@ type UpcomingAppointment = {
 }
 
 export default async function AdminDashboard() {
-  const session = await auth()
+  const session = await getSession()
   if (!session) redirect('/login')
 
   const [totalOwners, totalDogs, upcomingAppointmentsRaw, monthSessions] =
@@ -71,7 +71,7 @@ export default async function AdminDashboard() {
       <div className="flex flex-col gap-1">
         <h1 className="text-2xl font-bold text-gray-900">
           Bienvenida,{' '}
-          <span className="text-primary-600">{session.user.name}</span>
+          <span className="text-primary-600">{session.name}</span>
         </h1>
         <p className="text-sm text-gray-500 capitalize">{today}</p>
       </div>

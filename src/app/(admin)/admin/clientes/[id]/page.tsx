@@ -1,5 +1,5 @@
 import { prisma } from '@/lib/prisma'
-import { auth } from '@/lib/auth'
+import { getSession } from '@/lib/auth'
 import { redirect, notFound } from 'next/navigation'
 import Link from 'next/link'
 import { Button } from '@/components/ui/button'
@@ -37,7 +37,7 @@ export default async function ClienteDetailPage({
 }: {
   params: { id: string }
 }) {
-  const session = await auth()
+  const session = await getSession()
   if (!session) redirect('/login')
 
   const owner = await prisma.owner.findUnique({

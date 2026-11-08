@@ -1,5 +1,5 @@
 import { prisma } from '@/lib/prisma'
-import { auth } from '@/lib/auth'
+import { getSession } from '@/lib/auth'
 import { redirect } from 'next/navigation'
 import { DogForm } from '@/components/admin/DogForm'
 
@@ -12,7 +12,7 @@ export default async function NuevoPerroPage({
 }: {
   searchParams: SearchParams
 }) {
-  const session = await auth()
+  const session = await getSession()
   if (!session) redirect('/login')
 
   const owners = await prisma.owner.findMany({

@@ -1,5 +1,5 @@
 import { prisma } from '@/lib/prisma'
-import { auth } from '@/lib/auth'
+import { getSession } from '@/lib/auth'
 import { redirect } from 'next/navigation'
 import Link from 'next/link'
 import { Button } from '@/components/ui/button'
@@ -8,7 +8,7 @@ import { AgendaView } from '@/components/admin/AgendaView'
 import type { AppointmentWithRelations, OwnerWithDogs } from '@/components/admin/AgendaView'
 
 export default async function AgendaPage() {
-  const session = await auth()
+  const session = await getSession()
   if (!session) redirect('/login')
 
   const now = new Date()

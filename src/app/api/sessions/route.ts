@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { z } from 'zod';
 import { Prisma, SessionStatus } from '@prisma/client';
 import { prisma } from '@/lib/prisma';
-import { auth } from '@/lib/auth';
+import { getSession } from '@/lib/auth';
 
 const createSessionSchema = z.object({
   dogId: z.string().min(1),
@@ -14,7 +14,7 @@ const createSessionSchema = z.object({
 });
 
 export async function GET(request: NextRequest) {
-  const session = await auth();
+  const session = await getSession();
   if (!session) {
     return NextResponse.json({ error: 'No autorizado' }, { status: 401 });
   }
@@ -50,7 +50,7 @@ export async function GET(request: NextRequest) {
 }
 
 export async function POST(request: NextRequest) {
-  const session = await auth();
+  const session = await getSession();
   if (!session) {
     return NextResponse.json({ error: 'No autorizado' }, { status: 401 });
   }
@@ -71,7 +71,7 @@ export async function POST(request: NextRequest) {
     const newSession = await prisma.session.create({
       data: {
         dogId,
-        professionalId: session.user.id,
+        professionalId: session.id,
         date: new Date(date),
         ...(type !== undefined ? { type } : {}),
         ...(durationMinutes !== undefined ? { durationMinutes } : {}),

@@ -1,7 +1,6 @@
 'use client'
 
 import { useState } from 'react'
-import { signIn } from 'next-auth/react'
 import { useRouter } from 'next/navigation'
 import { useForm } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
@@ -34,18 +33,19 @@ export default function LoginPage() {
   const onSubmit = async (data: LoginFormData) => {
     setAuthError(null)
 
-    const result = await signIn('credentials', {
-      email: data.email,
-      password: data.password,
-      redirect: false,
+    const res = await fetch('/api/auth/login', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(data),
     })
 
-    if (result?.error) {
+    if (!res.ok) {
       setAuthError('Credenciales incorrectas')
       return
     }
 
     router.push('/admin')
+    router.refresh()
   }
 
   return (
@@ -89,11 +89,7 @@ export default function LoginPage() {
               <p className="text-sm text-red-500 text-center">{authError}</p>
             )}
 
-            <Button
-              type="submit"
-              className="w-full"
-              disabled={isSubmitting}
-            >
+            <Button type="submit" className="w-full" disabled={isSubmitting}>
               {isSubmitting ? (
                 <>
                   <Loader2 className="h-4 w-4 animate-spin" />
