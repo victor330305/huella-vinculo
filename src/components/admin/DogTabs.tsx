@@ -605,7 +605,7 @@ function ExercisesTab({ dogId, exercises }: { dogId: string; exercises: Exercise
                       {ex.professionalNotes && (
                         <div className="mt-2">
                           <p className="text-xs text-gray-400 uppercase tracking-wide">
-                            Mis notas del profesional
+                            Notas del propietario
                           </p>
                           <p className="text-xs text-gray-600 bg-gray-50 rounded px-2 py-1 mt-0.5">
                             {ex.professionalNotes}
