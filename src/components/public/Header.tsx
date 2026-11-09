@@ -91,11 +91,18 @@ export function Header() {
                 </a>
               ))}
             </nav>
-            <a href="#contacto" onClick={() => setIsMenuOpen(false)}>
-              <Button className="w-full">
-                Solicitar evaluación gratuita
-              </Button>
-            </a>
+            <div className="flex flex-col gap-2">
+              <a href="#contacto" onClick={() => setIsMenuOpen(false)}>
+                <Button className="w-full">
+                  Solicitar evaluación gratuita
+                </Button>
+              </a>
+              <Link href="/login" onClick={() => setIsMenuOpen(false)}>
+                <Button variant="outline" className="w-full">
+                  Panel profesional
+                </Button>
+              </Link>
+            </div>
           </div>
         )}
       </div>
