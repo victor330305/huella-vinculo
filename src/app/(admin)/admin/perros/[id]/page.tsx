@@ -29,6 +29,8 @@ export default async function PerroDetailPage({
         include: { professional: { select: { name: true } } },
       },
       exercises: { orderBy: { assignedAt: 'desc' } },
+      behaviorLogs: { orderBy: { date: 'desc' } },
+      reports: { orderBy: { generatedAt: 'desc' } },
     },
   })
 

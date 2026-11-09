@@ -6,6 +6,7 @@ import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { getInitials, formatDate, formatDateTime } from '@/lib/utils'
+import { CreateAccessButton } from '@/components/admin/CreateAccessButton'
 import {
   ChevronLeft,
   Pencil,
@@ -16,6 +17,7 @@ import {
   CalendarDays,
   Plus,
   User,
+  ShieldCheck,
 } from 'lucide-react'
 
 type DogRow = {
@@ -51,6 +53,7 @@ export default async function ClienteDetailPage({
         take: 5,
         include: { dog: true },
       },
+      user: true,
     },
   })
 
@@ -136,6 +139,28 @@ export default async function ClienteDetailPage({
               </div>
             )}
           </dl>
+        </CardContent>
+      </Card>
+
+      {/* Portal access */}
+      <Card>
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2">
+            <ShieldCheck className="h-5 w-5 text-primary-600" />
+            Acceso al portal
+          </CardTitle>
+        </CardHeader>
+        <CardContent>
+          {owner.userId ? (
+            <div className="flex items-center gap-3">
+              <Badge variant="success">Con acceso</Badge>
+              {owner.user?.email && (
+                <span className="text-sm text-gray-600">{owner.user.email}</span>
+              )}
+            </div>
+          ) : (
+            <CreateAccessButton ownerId={owner.id} />
+          )}
         </CardContent>
       </Card>
 

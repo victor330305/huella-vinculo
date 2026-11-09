@@ -14,6 +14,7 @@ import { Input } from '@/components/ui/input'
 import { Textarea } from '@/components/ui/textarea'
 import { formatDate, formatDateTime } from '@/lib/utils'
 import { Loader2, Save, Plus, CheckCircle2 } from 'lucide-react'
+import { ReportsAdminTab } from '@/components/admin/ReportsAdminTab'
 
 // ─── Types ───────────────────────────────────────────────────────────────────
 
@@ -41,6 +42,7 @@ interface Exercise {
   frequency: string | null
   videoUrl: string | null
   assignedAt: string | Date
+  professionalNotes: string | null
 }
 
 interface DogProfile {
@@ -50,6 +52,28 @@ interface DogProfile {
   agreedObjectives: string | null
   workPlan: string | null
   homeRecommendations: string | null
+}
+
+interface BehaviorLog {
+  id: string
+  date: string | Date
+  location: string | null
+  situation: string
+  behavior: string
+}
+
+interface Report {
+  id: string
+  dogId: string
+  generatedAt: string | Date
+  initialState: string | null
+  objectives: string | null
+  activitiesPerformed: string | null
+  changesObserved: string | null
+  pendingDifficulties: string | null
+  nextObjectives: string | null
+  professionalNotes: string | null
+  isVisibleToOwner: boolean
 }
 
 interface Dog {
@@ -73,6 +97,8 @@ interface Dog {
   profile: DogProfile | null
   sessions: Session[]
   exercises: Exercise[]
+  behaviorLogs: BehaviorLog[]
+  reports: Report[]
 }
 
 // ─── Profile form schema ─────────────────────────────────────────────────────
@@ -576,6 +602,16 @@ function ExercisesTab({ dogId, exercises }: { dogId: string; exercises: Exercise
                       <p className="text-xs text-gray-400 mt-1">
                         Asignado: {formatDate(ex.assignedAt)}
                       </p>
+                      {ex.professionalNotes && (
+                        <div className="mt-2">
+                          <p className="text-xs text-gray-400 uppercase tracking-wide">
+                            Mis notas del profesional
+                          </p>
+                          <p className="text-xs text-gray-600 bg-gray-50 rounded px-2 py-1 mt-0.5">
+                            {ex.professionalNotes}
+                          </p>
+                        </div>
+                      )}
                     </div>
                     {next && nextLabel && (
                       <Button
@@ -714,6 +750,8 @@ export function DogTabs({ dog }: { dog: Dog }) {
         <TabsTrigger value="expediente">Expediente</TabsTrigger>
         <TabsTrigger value="sesiones">Sesiones</TabsTrigger>
         <TabsTrigger value="ejercicios">Ejercicios</TabsTrigger>
+        <TabsTrigger value="diario">Diario</TabsTrigger>
+        <TabsTrigger value="informes">Informes</TabsTrigger>
       </TabsList>
 
       {/* ── Info tab ── */}
@@ -831,6 +869,48 @@ export function DogTabs({ dog }: { dog: Dog }) {
       {/* ── Ejercicios tab ── */}
       <TabsContent value="ejercicios">
         <ExercisesTab dogId={dog.id} exercises={dog.exercises} />
+      </TabsContent>
+
+      {/* ── Diario tab ── */}
+      <TabsContent value="diario">
+        <Card>
+          <CardHeader>
+            <CardTitle>Diario de comportamiento ({dog.behaviorLogs.length})</CardTitle>
+          </CardHeader>
+          <CardContent>
+            {dog.behaviorLogs.length === 0 ? (
+              <p className="text-sm text-gray-500 py-4 text-center">
+                Sin registros en el diario aún.
+              </p>
+            ) : (
+              <ul className="divide-y divide-gray-100">
+                {dog.behaviorLogs.map((log) => (
+                  <li key={log.id} className="py-4 space-y-1.5">
+                    <p className="text-xs text-gray-400">
+                      {formatDateTime(log.date)}
+                      {log.location && <span> · {log.location}</span>}
+                    </p>
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                      <div>
+                        <p className="text-xs text-gray-400 uppercase tracking-wide">Situación</p>
+                        <p className="text-sm text-gray-800">{log.situation}</p>
+                      </div>
+                      <div>
+                        <p className="text-xs text-gray-400 uppercase tracking-wide">Comportamiento</p>
+                        <p className="text-sm text-gray-800">{log.behavior}</p>
+                      </div>
+                    </div>
+                  </li>
+                ))}
+              </ul>
+            )}
+          </CardContent>
+        </Card>
+      </TabsContent>
+
+      {/* ── Informes tab ── */}
+      <TabsContent value="informes">
+        <ReportsAdminTab dogId={dog.id} reports={dog.reports} />
       </TabsContent>
     </Tabs>
   )
