@@ -49,6 +49,7 @@ model Owner {
 
   dogs         Dog[]
   appointments Appointment[]
+  behaviorLogs BehaviorLog[]
 
   @@map("owners")
 }
@@ -84,6 +85,8 @@ model Dog {
   exercises    Exercise[]
   appointments Appointment[]
   photos       DogPhoto[]
+  behaviorLogs BehaviorLog[]
+  reports      Report[]
 
   @@map("dogs")
 }
@@ -233,4 +236,40 @@ model ContactRequest {
   createdAt       DateTime @default(now())
 
   @@map("contact_requests")
+}
+
+model BehaviorLog {
+  id            String   @id @default(cuid())
+  dogId         String
+  dog           Dog      @relation(fields: [dogId], references: [id])
+  ownerId       String
+  owner         Owner    @relation(fields: [ownerId], references: [id])
+  date          DateTime
+  location      String?
+  situation     String
+  stimulus      String?
+  distance      String?
+  behavior      String
+  ownerResponse String?
+  recoveryTime  String?
+  comments      String?
+  mediaUrls     String[] @default([])
+  createdAt     DateTime @default(now())
+  @@map("behavior_logs")
+}
+
+model Report {
+  id                  String   @id @default(cuid())
+  dogId               String
+  dog                 Dog      @relation(fields: [dogId], references: [id])
+  generatedAt         DateTime @default(now())
+  initialState        String?
+  objectives          String?
+  activitiesPerformed String?
+  changesObserved     String?
+  pendingDifficulties String?
+  nextObjectives      String?
+  professionalNotes   String?
+  isVisibleToOwner    Boolean  @default(false)
+  @@map("reports")
 }
