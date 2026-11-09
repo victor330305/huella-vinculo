@@ -7,7 +7,8 @@ export async function generateContent(prompt: string): Promise<string> {
   }
 
   const genAI = new GoogleGenerativeAI(apiKey)
-  const model = genAI.getGenerativeModel({ model: 'gemini-2.0-flash' })
+  // Usar el modelo estable disponible en el free tier
+  const model = genAI.getGenerativeModel({ model: 'models/gemini-3.8-flash' })
   const result = await model.generateContent(prompt)
   return result.response.text()
 }
