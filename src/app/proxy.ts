@@ -1,32 +1,45 @@
 import { NextRequest, NextResponse } from "next/server";
 import { verifyToken, COOKIE_NAME } from "@/lib/auth";
 
-export async function middleware(req: NextRequest) {
-  const { pathname } = req.nextUrl;
+export async function middleware(request: NextRequest) {
+  const pathname = request.nextUrl.pathname;
+  const isAdmin       = pathname.startsWith("/admin");
+  const isPortal      = pathname.startsWith("/portal");
+  const isAdminLogin  = pathname === "/login";
+  const isPortalLogin = pathname === "/portal/login";
 
-  const isAdminRoute = pathname.startsWith("/admin");
-  const isLoginPage = pathname === "/login";
+  if (!isAdmin && !isPortal && !isAdminLogin) return NextResponse.next();
 
-  // Solo actuar en rutas del admin y login
-  if (!isAdminRoute && !isLoginPage) {
-    return NextResponse.next();
+  const token = request.cookies.get(COOKIE_NAME)?.value;
+  const user = token ? await verifyToken(token).catch(() => null) : null;
+  const role = user?.role;
+
+  if (isAdmin) {
+    if (!user) return NextResponse.redirect(new URL("/login", request.url));
+    if (role === "OWNER") return NextResponse.redirect(new URL("/portal", request.url));
+    return NextResponse.next(); // ADMIN
   }
 
-  const token = req.cookies.get(COOKIE_NAME)?.value;
-  const user = token ? await verifyToken(token) : null;
-  const isLoggedIn = !!user;
-
-  if (isAdminRoute && !isLoggedIn) {
-    return NextResponse.redirect(new URL("/login", req.url));
+  if (isPortal) {
+    if (isPortalLogin) {
+      if (!user) return NextResponse.next(); // muestra el login
+      return role === "ADMIN"
+        ? NextResponse.redirect(new URL("/admin", request.url))
+        : NextResponse.redirect(new URL("/portal", request.url));
+    }
+    // rutas protegidas del portal
+    if (!user) return NextResponse.redirect(new URL("/portal/login", request.url));
+    if (role === "ADMIN") return NextResponse.redirect(new URL("/admin", request.url));
+    return NextResponse.next(); // OWNER
   }
 
-  if (isLoginPage && isLoggedIn) {
-    return NextResponse.redirect(new URL("/admin", req.url));
-  }
-
+  // /login (admin)
+  if (user) return role === "OWNER"
+    ? NextResponse.redirect(new URL("/portal", request.url))
+    : NextResponse.redirect(new URL("/admin", request.url));
   return NextResponse.next();
 }
 
 export const config = {
-  matcher: ["/admin/:path*", "/login"],
+  matcher: ["/admin/:path*", "/portal/:path*", "/login"],
 };
