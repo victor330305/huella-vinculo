@@ -27,8 +27,33 @@ export async function GET(request: NextRequest) {
 
   const where: Prisma.ExerciseWhereInput = {};
 
-  if (dogId) where.dogId = dogId;
   if (status) where.status = status as ExerciseStatus;
+
+  if (session.role === "OWNER") {
+    const owner = await prisma.owner.findUnique({ where: { userId: session.id } });
+    if (!owner) {
+      return NextResponse.json({ error: "Propietario no encontrado" }, { status: 403 });
+    }
+
+    if (dogId) {
+      const dog = await prisma.dog.findUnique({
+        where: { id: dogId },
+        select: { ownerId: true, isActive: true },
+      });
+      if (!dog) {
+        return NextResponse.json({ error: "Perro no encontrado" }, { status: 404 });
+      }
+      if (dog.ownerId !== owner.id) {
+        return NextResponse.json({ error: "Acceso denegado" }, { status: 403 });
+      }
+      where.dogId = dogId;
+    } else {
+      where.dog = { ownerId: owner.id };
+    }
+  } else {
+    // ADMIN
+    if (dogId) where.dogId = dogId;
+  }
 
   const exercises = await prisma.exercise.findMany({
     where,
@@ -45,6 +70,10 @@ export async function POST(request: NextRequest) {
   const session = await getSession();
   if (!session) {
     return NextResponse.json({ error: 'No autorizado' }, { status: 401 });
+  }
+
+  if (session.role !== "ADMIN") {
+    return NextResponse.json({ error: "Acceso denegado" }, { status: 403 });
   }
 
   try {

@@ -25,14 +25,25 @@ export async function GET(
 
   const exercise = await prisma.exercise.findUnique({
     where: { id },
-    include: { dog: true },
+    include: { dog: { select: { ownerId: true } } },
   });
 
   if (!exercise) {
     return NextResponse.json({ error: 'Ejercicio no encontrado' }, { status: 404 });
   }
 
-  return NextResponse.json(exercise);
+  if (session.role === 'OWNER') {
+    const owner = await prisma.owner.findUnique({ where: { userId: session.id } });
+    if (!owner) {
+      return NextResponse.json({ error: 'Propietario no encontrado' }, { status: 403 });
+    }
+    if (exercise.dog.ownerId !== owner.id) {
+      return NextResponse.json({ error: 'Acceso denegado' }, { status: 403 });
+    }
+  }
+
+  const { dog: _dog, ...exerciseData } = exercise;
+  return NextResponse.json(exerciseData);
 }
 
 export async function PUT(
@@ -47,18 +58,41 @@ export async function PUT(
   try {
     const { id } = await params;
     const body = await request.json();
-    const parsed = updateExerciseSchema.safeParse(body);
 
+    const existing = await prisma.exercise.findUnique({
+      where: { id },
+      include: { dog: { select: { ownerId: true } } },
+    });
+    if (!existing) {
+      return NextResponse.json({ error: 'Ejercicio no encontrado' }, { status: 404 });
+    }
+
+    if (session.role === 'OWNER') {
+      const owner = await prisma.owner.findUnique({ where: { userId: session.id } });
+      if (!owner) return NextResponse.json({ error: 'Propietario no encontrado' }, { status: 403 });
+      if (existing.dog.ownerId !== owner.id) return NextResponse.json({ error: 'Acceso denegado' }, { status: 403 });
+
+      const ownerSchema = z.strictObject({
+        status: z.literal('IN_PROGRESS').optional(),
+        professionalNotes: z.string().optional(),
+      });
+      const parsed = ownerSchema.safeParse(body);
+      if (!parsed.success) return NextResponse.json({ error: 'Datos inválidos', details: parsed.error.flatten() }, { status: 400 });
+
+      if (parsed.data.status === 'IN_PROGRESS' && existing.status === 'COMPLETED')
+        return NextResponse.json({ error: 'El ejercicio ya está completado' }, { status: 409 });
+
+      const updated = await prisma.exercise.update({ where: { id }, data: parsed.data });
+      return NextResponse.json(updated);
+    }
+
+    // ADMIN path
+    const parsed = updateExerciseSchema.safeParse(body);
     if (!parsed.success) {
       return NextResponse.json(
         { error: 'Datos inválidos', details: parsed.error.flatten() },
         { status: 400 }
       );
-    }
-
-    const existing = await prisma.exercise.findUnique({ where: { id } });
-    if (!existing) {
-      return NextResponse.json({ error: 'Ejercicio no encontrado' }, { status: 404 });
     }
 
     const { reviewDate, status: statusValue, ...rest } = parsed.data;
