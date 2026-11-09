@@ -50,3 +50,10 @@ export function calculateAge(birthDate: Date | string | null, approximateAge?: s
   const years = Math.floor(months / 12);
   return `${years} ${years === 1 ? "año" : "años"}`;
 }
+
+export function getYouTubeId(url: string): string | null {
+  const YT_REGEX =
+    /(?:youtube\.com\/(?:watch\?v=|embed\/|shorts\/|v\/)|youtu\.be\/)([A-Za-z0-9_-]{11})/;
+  const m = url.match(YT_REGEX);
+  return m ? m[1] : null;
+}
