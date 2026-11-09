@@ -186,7 +186,21 @@ model Exercise {
   professionalNotes String?
   updatedAt         DateTime       @updatedAt
 
+  logs              ExerciseLog[]
+
   @@map("exercises")
+}
+
+// ─── REGISTRO DE PRÁCTICAS ───────────────────────────────────────────────────
+
+model ExerciseLog {
+  id          String   @id @default(cuid())
+  exerciseId  String
+  exercise    Exercise @relation(fields: [exerciseId], references: [id])
+  practicedAt DateTime @default(now())
+  note        String?  // comentario del propietario
+
+  @@map("exercise_logs")
 }
 
 // ─── AGENDA / TURNOS ─────────────────────────────────────────────────────────

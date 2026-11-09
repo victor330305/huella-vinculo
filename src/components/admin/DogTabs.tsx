@@ -16,6 +16,52 @@ import { formatDate, formatDateTime } from '@/lib/utils'
 import { Loader2, Save, Plus, CheckCircle2 } from 'lucide-react'
 import { ReportsAdminTab } from '@/components/admin/ReportsAdminTab'
 
+// ─── ExerciseLogList ─────────────────────────────────────────────────────────
+
+function ExerciseLogList({ exerciseId }: { exerciseId: string }) {
+  const [logs, setLogs] = useState<{ id: string; practicedAt: string; note: string | null }[]>([])
+  const [loaded, setLoaded] = useState(false)
+  const [open, setOpen] = useState(false)
+
+  const load = async () => {
+    if (loaded) { setOpen((v) => !v); return }
+    const res = await fetch(`/api/exercise-logs?exerciseId=${exerciseId}`)
+    if (res.ok) {
+      const data = await res.json()
+      setLogs(data)
+      setLoaded(true)
+      setOpen(true)
+    }
+  }
+
+  return (
+    <div className="mt-2">
+      <button
+        type="button"
+        onClick={load}
+        className="text-xs text-primary-600 hover:text-primary-700 font-medium"
+      >
+        {open ? '▲ Ocultar prácticas' : '▼ Ver historial de prácticas'}
+        {loaded && ` (${logs.length})`}
+      </button>
+      {open && (
+        <div className="mt-2 space-y-1">
+          {logs.length === 0 ? (
+            <p className="text-xs text-gray-400">Sin prácticas registradas aún.</p>
+          ) : (
+            logs.map((log) => (
+              <div key={log.id} className="text-xs bg-green-50 border border-green-100 rounded px-2 py-1.5">
+                <span className="font-medium text-green-700">{formatDateTime(log.practicedAt)}</span>
+                {log.note && <span className="text-gray-600 ml-2">— {log.note}</span>}
+              </div>
+            ))
+          )}
+        </div>
+      )}
+    </div>
+  )
+}
+
 // ─── Types ───────────────────────────────────────────────────────────────────
 
 type SessionType = 'EVALUATION' | 'TRAINING' | 'FOLLOW_UP'
@@ -612,6 +658,7 @@ function ExercisesTab({ dogId, exercises }: { dogId: string; exercises: Exercise
                           </p>
                         </div>
                       )}
+                      <ExerciseLogList exerciseId={ex.id} />
                     </div>
                     {next && nextLabel && (
                       <Button

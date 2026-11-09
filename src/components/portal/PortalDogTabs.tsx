@@ -219,30 +219,36 @@ function ExpedienteTab({ profile, reports }: { profile: DogProfile | null; repor
   )
 }
 
-function EjerciciosTab({ exercises }: { exercises: Exercise[] }) {
-  // Per-exercise local state for notes and loading flags
+function EjerciciosTab({ exercises, dogId }: { exercises: Exercise[]; dogId: string }) {
   const [notesMap, setNotesMap] = useState<Record<string, string>>(
     () => Object.fromEntries(exercises.map((ex) => [ex.id, ex.professionalNotes ?? '']))
   )
   const [savingNotes, setSavingNotes] = useState<Record<string, boolean>>({})
-  const [markingId, setMarkingId] = useState<string | null>(null)
+  const [loggingId, setLoggingId] = useState<string | null>(null)
+  const [logNote, setLogNote] = useState<Record<string, string>>({})
+  const [logCounts, setLogCounts] = useState<Record<string, number>>({})
   const [statusMap, setStatusMap] = useState<Record<string, ExerciseStatus>>(
     () => Object.fromEntries(exercises.map((ex) => [ex.id, ex.status]))
   )
+  const [successMap, setSuccessMap] = useState<Record<string, boolean>>({})
 
-  const handleMarkPracticed = async (exerciseId: string) => {
-    setMarkingId(exerciseId)
+  const handleRegisterPractice = async (exerciseId: string) => {
+    setLoggingId(exerciseId)
     try {
-      const res = await fetch(`/api/exercises/${exerciseId}`, {
-        method: 'PUT',
+      const res = await fetch('/api/exercise-logs', {
+        method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ status: 'IN_PROGRESS' }),
+        body: JSON.stringify({ exerciseId, note: logNote[exerciseId] || undefined }),
       })
       if (res.ok) {
+        setLogCounts((prev) => ({ ...prev, [exerciseId]: (prev[exerciseId] ?? 0) + 1 }))
+        setLogNote((prev) => ({ ...prev, [exerciseId]: '' }))
         setStatusMap((prev) => ({ ...prev, [exerciseId]: 'IN_PROGRESS' }))
+        setSuccessMap((prev) => ({ ...prev, [exerciseId]: true }))
+        setTimeout(() => setSuccessMap((prev) => ({ ...prev, [exerciseId]: false })), 2000)
       }
     } finally {
-      setMarkingId(null)
+      setLoggingId(null)
     }
   }
 
@@ -273,17 +279,24 @@ function EjerciciosTab({ exercises }: { exercises: Exercise[] }) {
     <div className="space-y-4">
       {exercises.map((ex) => {
         const currentStatus = statusMap[ex.id]
-        const canMark = currentStatus === 'ASSIGNED' || currentStatus === 'PAUSED'
         const ytId = ex.videoUrl ? getYouTubeId(ex.videoUrl) : null
+        const practiceCount = logCounts[ex.id] ?? 0
 
         return (
           <Card key={ex.id}>
             <CardHeader>
               <div className="flex items-center justify-between gap-2 flex-wrap">
                 <CardTitle className="text-base">{ex.name}</CardTitle>
-                <Badge variant={exerciseStatusVariant(currentStatus)}>
-                  {exerciseStatusLabel(currentStatus)}
-                </Badge>
+                <div className="flex items-center gap-2">
+                  {practiceCount > 0 && (
+                    <span className="text-xs bg-green-100 text-green-700 font-medium px-2 py-0.5 rounded-full">
+                      +{practiceCount} práctica{practiceCount > 1 ? 's' : ''} hoy
+                    </span>
+                  )}
+                  <Badge variant={exerciseStatusVariant(currentStatus)}>
+                    {exerciseStatusLabel(currentStatus)}
+                  </Badge>
+                </div>
               </div>
             </CardHeader>
             <CardContent className="space-y-4">
@@ -319,12 +332,8 @@ function EjerciciosTab({ exercises }: { exercises: Exercise[] }) {
                       />
                     </div>
                   ) : (
-                    <a
-                      href={ex.videoUrl}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="inline-flex items-center gap-1.5 text-sm text-primary-600 hover:text-primary-700 underline"
-                    >
+                    <a href={ex.videoUrl} target="_blank" rel="noopener noreferrer"
+                      className="inline-flex items-center gap-1.5 text-sm text-primary-600 hover:text-primary-700 underline">
                       <ExternalLink className="h-3.5 w-3.5" />
                       Ver video
                     </a>
@@ -332,50 +341,54 @@ function EjerciciosTab({ exercises }: { exercises: Exercise[] }) {
                 </div>
               )}
 
-              {/* Mark as practiced */}
-              {canMark && (
-                <button
-                  type="button"
-                  disabled={markingId === ex.id}
-                  onClick={() => handleMarkPracticed(ex.id)}
-                  className="inline-flex items-center gap-2 rounded-lg bg-primary-600 px-4 py-2 text-sm font-medium text-white hover:bg-primary-700 disabled:opacity-60 transition-colors"
-                >
-                  {markingId === ex.id ? (
-                    <Loader2 className="h-4 w-4 animate-spin" />
-                  ) : null}
-                  Marcar como practicado
-                </button>
+              {/* Registrar práctica */}
+              {currentStatus !== 'COMPLETED' && (
+                <div className="bg-primary-50 rounded-lg p-4 space-y-3">
+                  <p className="text-sm font-medium text-primary-800">¿Practicaste hoy?</p>
+                  <textarea
+                    rows={2}
+                    value={logNote[ex.id] ?? ''}
+                    onChange={(e) => setLogNote((prev) => ({ ...prev, [ex.id]: e.target.value }))}
+                    placeholder="Comentario opcional (cómo salió, qué pasó…)"
+                    className="w-full rounded-lg border border-primary-200 bg-white px-3 py-2 text-sm placeholder:text-gray-400 focus:outline-none focus:ring-2 focus:ring-primary-500 resize-none"
+                  />
+                  <button
+                    type="button"
+                    disabled={loggingId === ex.id}
+                    onClick={() => handleRegisterPractice(ex.id)}
+                    className="inline-flex items-center gap-2 rounded-lg bg-primary-600 px-4 py-2 text-sm font-semibold text-white hover:bg-primary-700 disabled:opacity-60 transition-colors"
+                  >
+                    {loggingId === ex.id ? (
+                      <Loader2 className="h-4 w-4 animate-spin" />
+                    ) : successMap[ex.id] ? (
+                      '✓ Registrado'
+                    ) : (
+                      'Registrar práctica'
+                    )}
+                  </button>
+                </div>
               )}
 
-              {/* Notes */}
+              {/* Notas generales */}
               <div className="space-y-2">
-                <label
-                  htmlFor={`notes-${ex.id}`}
-                  className="block text-xs text-gray-400 uppercase tracking-wide"
-                >
-                  Mis notas
+                <label htmlFor={`notes-${ex.id}`}
+                  className="block text-xs text-gray-400 uppercase tracking-wide">
+                  Mis notas generales
                 </label>
                 <textarea
                   id={`notes-${ex.id}`}
-                  rows={3}
+                  rows={2}
                   value={notesMap[ex.id] ?? ''}
-                  onChange={(e) =>
-                    setNotesMap((prev) => ({ ...prev, [ex.id]: e.target.value }))
-                  }
-                  placeholder="Escribí tus observaciones sobre este ejercicio…"
-                  className="w-full rounded-lg border border-gray-200 bg-white px-3 py-2 text-sm text-gray-900 placeholder:text-gray-400 focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-transparent resize-none"
+                  onChange={(e) => setNotesMap((prev) => ({ ...prev, [ex.id]: e.target.value }))}
+                  placeholder="Notas que querés compartir con Paula…"
+                  className="w-full rounded-lg border border-gray-200 bg-white px-3 py-2 text-sm placeholder:text-gray-400 focus:outline-none focus:ring-2 focus:ring-primary-500 resize-none"
                 />
                 <div className="flex justify-end">
-                  <button
-                    type="button"
-                    disabled={savingNotes[ex.id]}
+                  <button type="button" disabled={savingNotes[ex.id]}
                     onClick={() => handleSaveNotes(ex.id)}
-                    className="inline-flex items-center gap-2 rounded-lg border border-gray-200 bg-white px-3 py-1.5 text-sm font-medium text-gray-700 hover:bg-gray-50 disabled:opacity-60 transition-colors"
-                  >
-                    {savingNotes[ex.id] ? (
-                      <Loader2 className="h-4 w-4 animate-spin" />
-                    ) : null}
-                    Guardar
+                    className="inline-flex items-center gap-2 rounded-lg border border-gray-200 bg-white px-3 py-1.5 text-sm font-medium text-gray-700 hover:bg-gray-50 disabled:opacity-60 transition-colors">
+                    {savingNotes[ex.id] ? <Loader2 className="h-4 w-4 animate-spin" /> : null}
+                    Guardar nota
                   </button>
                 </div>
               </div>
@@ -469,7 +482,7 @@ export function PortalDogTabs({ dog, initialTab }: { dog: Dog; initialTab: strin
       </TabsContent>
 
       <TabsContent value="ejercicios">
-        <EjerciciosTab exercises={dog.exercises} />
+        <EjerciciosTab exercises={dog.exercises} dogId={dog.id} />
       </TabsContent>
 
       <TabsContent value="sesiones">
