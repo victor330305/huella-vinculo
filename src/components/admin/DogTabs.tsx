@@ -15,6 +15,7 @@ import { Textarea } from '@/components/ui/textarea'
 import { formatDate, formatDateTime } from '@/lib/utils'
 import { Loader2, Save, Plus, CheckCircle2 } from 'lucide-react'
 import { ReportsAdminTab } from '@/components/admin/ReportsAdminTab'
+import { AiAssistant } from '@/components/admin/AiAssistant'
 
 // ─── ExerciseLogList ─────────────────────────────────────────────────────────
 
@@ -799,6 +800,7 @@ export function DogTabs({ dog }: { dog: Dog }) {
         <TabsTrigger value="ejercicios">Ejercicios</TabsTrigger>
         <TabsTrigger value="diario">Diario</TabsTrigger>
         <TabsTrigger value="informes">Informes</TabsTrigger>
+        <TabsTrigger value="ia">IA ✨</TabsTrigger>
       </TabsList>
 
       {/* ── Info tab ── */}
@@ -958,6 +960,11 @@ export function DogTabs({ dog }: { dog: Dog }) {
       {/* ── Informes tab ── */}
       <TabsContent value="informes">
         <ReportsAdminTab dogId={dog.id} reports={dog.reports} />
+      </TabsContent>
+
+      {/* ── IA tab ── */}
+      <TabsContent value="ia">
+        <AiAssistant dogId={dog.id} />
       </TabsContent>
     </Tabs>
   )
